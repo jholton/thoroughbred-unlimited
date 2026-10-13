@@ -496,6 +496,10 @@ form input:focus, form select:focus, form textarea:focus {
 form textarea { min-height: 150px; resize: vertical; }
 .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 1.2rem; }
 .form-note { font-size: .84rem; color: var(--muted); margin-top: 1rem; }
+/* Honeypot. Moved out of view rather than display:none — some bots skip
+   fields that are explicitly hidden. Not reachable by keyboard or screen
+   readers (tabindex="-1" and aria-hidden on the wrapper). */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
 /* ---------- Footer ---------- */
 .site-footer { background: var(--ink); color: #9C9CA8; font-size: .93rem; }

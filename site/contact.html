@@ -115,13 +115,17 @@
           <h2>Tell us about the loss</h2>
 
           <!--
-            This form opens the sender's email client with the details pre-filled, so it works
-            on any static host with no back end. To collect submissions server-side instead,
-            replace the JS handler at the bottom of this page with a form service:
-              <form action="https://formspree.io/f/YOUR_ID" method="POST"> ... </form>
-            and delete the inline script.
+            Posts to send.php, which emails the details. Requires PHP, which GoDaddy's
+            Linux (cPanel) hosting provides by default — set the two addresses at the
+            top of send.php. Works with JavaScript turned off.
           -->
-          <form id="assignment-form" novalidate>
+          <form id="assignment-form" action="send.php" method="POST">
+            <!-- Honeypot: hidden from people, filled in by most bots. Not a real field. -->
+            <div class="hp" aria-hidden="true">
+              <label for="website">Website</label>
+              <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+            </div>
+
             <div class="field-row">
               <div class="field">
                 <label for="name">Your name</label>
@@ -235,38 +239,21 @@
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
 
+/* Disable the submit button once the form is on its way, so an impatient
+   double-click cannot send the same assignment twice. The form submits
+   normally; this only guards against duplicates. */
 (function () {
   var form = document.getElementById('assignment-form');
-  var status = document.getElementById('form-status');
   if (!form) return;
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
-
-    var get = function (id) { return (document.getElementById(id).value || '').trim(); };
-    var lines = [
-      'Name: ' + get('name'),
-      'Company: ' + get('company'),
-      'Email: ' + get('email'),
-      'Phone: ' + get('phone'),
-      'Type of assignment: ' + get('type'),
-      'Loss location: ' + get('location'),
-      '',
-      'Description of loss:',
-      get('message')
-    ];
-
-    var subject = 'Assignment: ' + (get('type') || 'New loss') + (get('location') ? ' — ' + get('location') : '');
-    window.location.href = 'mailto:info@thoroughbredunlimited.com'
-      + '?subject=' + encodeURIComponent(subject)
-      + '&body=' + encodeURIComponent(lines.join('\n'));
-
-    status.textContent = 'Your email client should now be open with the details filled in. If nothing happened, call 832-470-3852.';
+  form.addEventListener('submit', function () {
+    var button = form.querySelector('button[type="submit"]');
+    if (!button) return;
+    // Let the submission start before disabling, or the button's value is dropped.
+    window.setTimeout(function () {
+      button.disabled = true;
+      button.style.opacity = '.6';
+    }, 0);
   });
 })();
 </script>
