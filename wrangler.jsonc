@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "thoroughbred-unlimited",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-06-01",
+
+  "assets": {
+    // The whole brochure site. Files here are served directly by the asset
+    // server and never invoke the Worker.
+    "directory": "./site",
+
+    // Lets the Worker hand unmatched requests back to the asset server.
+    "binding": "ASSETS",
+
+    // Serve 404.html with a real 404. Without this, unmatched paths fall back
+    // to index.html with a 200, so typos would render the homepage and look
+    // like genuine pages to crawlers.
+    "not_found_handling": "404-page"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

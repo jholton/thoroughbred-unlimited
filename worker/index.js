@@ -1,16 +1,19 @@
 /**
- * Assignment form handler — Cloudflare Pages Function.
+ * Thoroughbred Unlimited — Worker entry point.
  *
- * Replaces the earlier send.php. Routed at POST /send by virtue of living at
- * functions/send.js; the Pages project's root directory is this `site` folder.
+ * The project is deployed as a Worker with static assets (see wrangler.jsonc).
+ * Requests matching a file in ../site are served directly by the asset server
+ * and never reach this code. Everything else arrives here: the /send form
+ * handler, and unmatched paths, which are handed back to the asset binding so
+ * not_found_handling can serve 404.html with a real 404 status.
  *
- * Mail goes out through Resend's HTTP API. Because the API takes structured
+ * Mail goes out through Resend's HTTP API. Because that API takes structured
  * JSON fields rather than a raw header block, the header-injection class of
  * bug that plagues PHP contact forms cannot occur here — there is no header
  * block for a newline to break out of. Control characters are still stripped
- * from the display name so the rendered From/Reply-To stays clean.
+ * from the display name so the rendered Reply-To stays clean.
  *
- * Required environment variables (Cloudflare dashboard → Settings → Variables):
+ * Required environment variables (Workers dashboard → Settings → Variables):
  *   RESEND_API_KEY  secret, from resend.com
  *   TO_EMAIL        where assignment notifications are delivered
  *   FROM_EMAIL      sender; its domain must be verified in Resend
@@ -20,7 +23,23 @@
 
 const MAX_MESSAGE = 20000;
 
-export async function onRequestPost({ request, env }) {
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/send') {
+      if (request.method === 'POST') return handleSend(request, env);
+      // A direct GET of /send belongs back at the form.
+      return redirect('/contact.html');
+    }
+
+    // Anything else that got this far matched no asset. Let the asset binding
+    // answer so not_found_handling returns 404.html with a 404 status.
+    return env.ASSETS.fetch(request);
+  },
+};
+
+async function handleSend(request, env) {
   let form;
   try {
     form = await request.formData();
@@ -108,19 +127,10 @@ export async function onRequestPost({ request, env }) {
     return sendFailed(to);
   }
 
-  if (!response.ok) {
-    return sendFailed(to);
-  }
+  if (!response.ok) return sendFailed(to);
 
   // Post/Redirect/Get: refreshing the thank-you page must not resend the form.
-  // Extensionless, because Pages 308-redirects /thank-you.html to /thank-you —
-  // going straight there saves a hop on the path that matters most.
   return redirect('/thank-you');
-}
-
-// A direct GET of /send belongs back at the form.
-export async function onRequestGet() {
-  return redirect('/contact.html');
 }
 
 /* -------------------------------------------------------------------------- */
