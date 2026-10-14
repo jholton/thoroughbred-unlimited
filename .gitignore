@@ -4,3 +4,5 @@ brand/
 preview-homepage.png
 .claude/
 README.md
+.wrangler/
+node_modules/
