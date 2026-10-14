@@ -180,6 +180,11 @@ async function handleSend(request, env) {
         reply_to: replyTo(name, email),
         subject: clean(subject),
         text,
+        // Outlook strips what it judges to be extra line breaks from
+        // plain-text mail, which would run the aligned labels below together.
+        // The HTML part is what Outlook actually renders; `text` remains the
+        // fallback for anything that prefers it.
+        html: buildHtml({ name, company, email, phone, type, location, message, attachments }),
         ...(attachments.length ? { attachments } : {}),
       }),
     });
@@ -194,6 +199,63 @@ async function handleSend(request, env) {
 }
 
 /* -------------------------------------------------------------------------- */
+
+/**
+ * The HTML part of the notification.
+ *
+ * Built for mail clients, not browsers: a table with inline styles, no
+ * stylesheet, no web fonts, no flexbox. Every interpolated value is escaped —
+ * these are strings a stranger typed into a public form.
+ */
+function buildHtml(data) {
+  const row = (label, value, link) => {
+    if (!value) return '';
+    const shown = link
+      ? `<a href="${escapeHtml(link)}" style="color:#8A6A12;text-decoration:none">${escapeHtml(value)}</a>`
+      : escapeHtml(value);
+    return `<tr>
+      <td style="padding:6px 16px 6px 0;color:#5F5F69;font-size:13px;white-space:nowrap;vertical-align:top">${escapeHtml(label)}</td>
+      <td style="padding:6px 0;color:#24242A;font-size:15px;vertical-align:top">${shown}</td>
+    </tr>`;
+  };
+
+  const attachmentList = data.attachments.length
+    ? `<p style="margin:0 0 6px;color:#5F5F69;font-size:13px">Attached (${data.attachments.length})</p>
+       <ul style="margin:0 0 24px;padding-left:20px;color:#24242A;font-size:14px">
+         ${data.attachments.map((a) => `<li>${escapeHtml(a.filename)}</li>`).join('')}
+       </ul>`
+    : '';
+
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px;background:#F7F5F1;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<div style="max-width:640px;margin:0 auto;background:#FFFFFF;border:1px solid #E3DED4;border-radius:3px;overflow:hidden">
+  <div style="background:#0B0B0D;padding:18px 24px">
+    <div style="color:#E7C86B;font-size:11px;letter-spacing:2px;text-transform:uppercase">New assignment enquiry</div>
+    <div style="color:#FFFFFF;font-size:17px;margin-top:4px">Thoroughbred Unlimited website</div>
+  </div>
+
+  <div style="padding:24px">
+    <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:24px">
+      ${row('Name', data.name)}
+      ${row('Company', data.company)}
+      ${row('Email', data.email, `mailto:${data.email}`)}
+      ${row('Phone', data.phone, `tel:${String(data.phone).replace(/[^\d+]/g, '')}`)}
+      ${row('Assignment', data.type)}
+      ${row('Location', data.location)}
+    </table>
+
+    <div style="color:#5F5F69;font-size:13px;margin-bottom:6px">Description of loss</div>
+    <div style="color:#24242A;font-size:15px;line-height:1.6;white-space:pre-wrap;padding:14px 16px;background:#F7F5F1;border-left:3px solid #C9A227;margin-bottom:24px">${escapeHtml(data.message)}</div>
+
+    ${attachmentList}
+
+    <div style="color:#5F5F69;font-size:12px;border-top:1px solid #E3DED4;padding-top:14px">
+      Reply to this email to answer ${escapeHtml(data.name)} directly.
+    </div>
+  </div>
+</div>
+</body></html>`;
+}
 
 /**
  * Read, validate and base64-encode uploaded documents.
