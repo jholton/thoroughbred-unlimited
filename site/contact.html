@@ -115,11 +115,10 @@
           <h2>Tell us about the loss</h2>
 
           <!--
-            Posts to send.php, which emails the details. Requires PHP, which GoDaddy's
-            Linux (cPanel) hosting provides by default — set the two addresses at the
-            top of send.php. Works with JavaScript turned off.
+            Posts to /send, a Cloudflare Pages Function (functions/send.js) that
+            emails the details via Resend. Works with JavaScript turned off.
           -->
-          <form id="assignment-form" action="send.php" method="POST">
+          <form id="assignment-form" action="/send" method="POST">
             <!-- Honeypot: hidden from people, filled in by most bots. Not a real field. -->
             <div class="hp" aria-hidden="true">
               <label for="website">Website</label>
