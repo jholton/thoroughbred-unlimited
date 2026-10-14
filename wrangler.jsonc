@@ -4,6 +4,11 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-06-01",
 
+  // For Buffer, used to base64-encode attachments. The idiomatic
+  // String.fromCharCode + btoa loop costs 37ms of CPU for 10MB and would blow
+  // the Free plan's 10ms budget; Buffer does the same work in 4ms.
+  "compatibility_flags": ["nodejs_compat"],
+
   // Plaintext variables live here, because `wrangler deploy` overwrites the
   // Worker's vars with whatever this file declares — anything set only in the
   // dashboard is wiped on the next deploy.

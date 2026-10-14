@@ -496,6 +496,27 @@ form input:focus, form select:focus, form textarea:focus {
 form textarea { min-height: 150px; resize: vertical; }
 .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 1.2rem; }
 .form-note { font-size: .84rem; color: var(--muted); margin-top: 1rem; }
+.field-optional {
+  font-weight: 500; letter-spacing: .06em; text-transform: none;
+  color: var(--muted); opacity: .75;
+}
+.field-hint { font-size: .84rem; color: var(--muted); margin: .55rem 0 0; }
+.field-hint.is-error { color: #9A2B1F; font-weight: 500; }
+
+/* File input: the native control is unstyleable, so style its button only. */
+input[type="file"] {
+  padding: .6rem .7rem; font-size: .92rem; cursor: pointer;
+  background: var(--bone);
+}
+input[type="file"]::file-selector-button {
+  font: inherit; font-size: .78rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  margin-right: 1rem; padding: .6rem 1.1rem; cursor: pointer;
+  color: #fff; background: var(--ink);
+  border: 1px solid var(--ink); border-radius: 2px;
+  transition: background .25s var(--ease);
+}
+input[type="file"]::file-selector-button:hover { background: var(--ink-3); }
 /* Honeypot. Moved out of view rather than display:none — some bots skip
    fields that are explicitly hidden. Not reachable by keyboard or screen
    readers (tabindex="-1" and aria-hidden on the wrapper). */

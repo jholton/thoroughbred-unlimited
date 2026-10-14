@@ -23,6 +23,41 @@
 
 const MAX_MESSAGE = 20000;
 
+/**
+ * Attachment limits.
+ *
+ * Resend caps a message at 40MB *after* base64, which inflates by a third.
+ * Gmail and Outlook refuse anything over 25MB on receipt, which is the real
+ * ceiling — an email the recipient's provider bounces is worse than one the
+ * sender was told to shrink. 10MB raw encodes to 13.3MB, leaving room for the
+ * body and headers while staying well inside every provider's limit.
+ */
+const MAX_FILES = 8;
+const MAX_TOTAL_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Allowed by extension AND reported type: what an adjuster actually receives —
+ * loss photographs, policies, estimates, schedules. Everything else is refused
+ * with a message pointing at the phone number, rather than relaying an
+ * arbitrary executable into his inbox.
+ */
+const ALLOWED = new Map([
+  ['pdf', 'application/pdf'],
+  ['jpg', 'image/jpeg'],
+  ['jpeg', 'image/jpeg'],
+  ['png', 'image/png'],
+  ['gif', 'image/gif'],
+  ['webp', 'image/webp'],
+  ['heic', 'image/heic'],
+  ['heif', 'image/heif'],
+  ['doc', 'application/msword'],
+  ['docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  ['xls', 'application/vnd.ms-excel'],
+  ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  ['txt', 'text/plain'],
+  ['csv', 'text/csv'],
+]);
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -85,6 +120,16 @@ async function handleSend(request, env) {
     return errorPage(`We need ${naturalList(missing)} before we can send this.`);
   }
 
+  // Attachments are validated before anything is sent, and a failure rejects
+  // the whole submission. Sending the message minus its documents would look
+  // like success to the visitor while quietly losing what they attached.
+  let attachments;
+  try {
+    attachments = await collectAttachments(form);
+  } catch (problem) {
+    return errorPage(problem.message);
+  }
+
   const to = env.TO_EMAIL;
   const from = env.FROM_EMAIL;
   if (!env.RESEND_API_KEY || !to || !from) {
@@ -106,6 +151,11 @@ async function handleSend(request, env) {
     'Description of loss\n' +
     '-------------------\n' +
     `${message}\n\n` +
+    (attachments.length
+      ? `Attached (${attachments.length}): ` +
+        attachments.map((a) => a.filename).join(', ') +
+        '\n\n'
+      : '') +
     '-- \n' +
     `Submitted ${timestamp()}\n` +
     `IP ${request.headers.get('CF-Connecting-IP') || 'unknown'}\n`;
@@ -130,6 +180,7 @@ async function handleSend(request, env) {
         reply_to: replyTo(name, email),
         subject: clean(subject),
         text,
+        ...(attachments.length ? { attachments } : {}),
       }),
     });
   } catch {
@@ -143,6 +194,69 @@ async function handleSend(request, env) {
 }
 
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Read, validate and base64-encode uploaded documents.
+ * Throws with a visitor-facing message when something is not acceptable.
+ */
+async function collectAttachments(form) {
+  const files = form
+    .getAll('documents')
+    .filter((entry) => entry && typeof entry === 'object' && entry.size > 0);
+
+  if (files.length === 0) return [];
+
+  if (files.length > MAX_FILES) {
+    throw new Error(
+      `Please attach no more than ${MAX_FILES} files. You attached ${files.length}.`
+    );
+  }
+
+  const total = files.reduce((sum, file) => sum + file.size, 0);
+  if (total > MAX_TOTAL_BYTES) {
+    throw new Error(
+      `Those attachments come to ${megabytes(total)}MB, and the limit is ` +
+        `${MAX_TOTAL_BYTES / 1024 / 1024}MB in total. Send the largest ones separately, ` +
+        'or call 832-470-3852 and we will arrange another way to receive them.'
+    );
+  }
+
+  const attachments = [];
+  for (const file of files) {
+    const filename = safeFilename(file.name);
+    const extension = filename.split('.').pop().toLowerCase();
+
+    if (!ALLOWED.has(extension)) {
+      throw new Error(
+        `We cannot accept "${filename}". Documents and photographs only — ` +
+          'PDF, JPG, PNG, HEIC, Word, Excel, TXT or CSV.'
+      );
+    }
+
+    // Buffer, not a String.fromCharCode + btoa loop: the loop costs ~37ms of
+    // CPU for 10MB and the Free plan allows 10ms per request.
+    const content = Buffer.from(await file.arrayBuffer()).toString('base64');
+
+    attachments.push({
+      filename,
+      content,
+      content_type: ALLOWED.get(extension),
+    });
+  }
+
+  return attachments;
+}
+
+/** Strip any directory component and anything that is not plainly a filename. */
+function safeFilename(raw) {
+  const base = String(raw || 'attachment').split(/[\\/]/).pop();
+  const cleaned = base.replace(/[\u0000-\u001F\u007F"]/g, '').trim();
+  return (cleaned || 'attachment').slice(0, 120);
+}
+
+function megabytes(bytes) {
+  return (bytes / 1024 / 1024).toFixed(1);
+}
 
 function isEmail(value) {
   // Deliberately permissive: the real proof an address works is a reply to it.

@@ -118,7 +118,7 @@
             Posts to /send, a Cloudflare Pages Function (functions/send.js) that
             emails the details via Resend. Works with JavaScript turned off.
           -->
-          <form id="assignment-form" action="/send" method="POST">
+          <form id="assignment-form" action="/send" method="POST" enctype="multipart/form-data">
             <!-- Honeypot: hidden from people, filled in by most bots. Not a real field. -->
             <div class="hp" aria-hidden="true">
               <label for="website">Website</label>
@@ -169,6 +169,13 @@
             <div class="field">
               <label for="message">Description of loss</label>
               <textarea id="message" name="message" placeholder="Date of loss, cause, estimated exposure, and anything we should know before the first inspection." required></textarea>
+            </div>
+
+            <div class="field">
+              <label for="documents">Documents &amp; photographs <span class="field-optional">optional</span></label>
+              <input type="file" id="documents" name="documents" multiple
+                     accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,.txt,.csv">
+              <p class="field-hint" id="documents-hint">Loss photographs, policy, estimates or schedules. Up to 8 files, 10&nbsp;MB in total.</p>
             </div>
 
             <button class="btn btn--dark" type="submit">Send assignment
@@ -245,13 +252,66 @@ document.getElementById('year').textContent = new Date().getFullYear();
   var form = document.getElementById('assignment-form');
   if (!form) return;
 
-  form.addEventListener('submit', function () {
+  var files = document.getElementById('documents');
+  var hint = document.getElementById('documents-hint');
+  var DEFAULT_HINT = hint ? hint.textContent : '';
+  var MAX_FILES = 8;
+  var MAX_TOTAL = 10 * 1024 * 1024;
+
+  /* Check attachments in the browser as well as on the server. The server is
+     the authority, but without this the visitor uploads the whole payload
+     before being told it was too big — painful on a phone at a loss site. */
+  function attachmentProblem() {
+    if (!files || !files.files || files.files.length === 0) return null;
+
+    if (files.files.length > MAX_FILES) {
+      return 'Please attach no more than ' + MAX_FILES + ' files. You selected ' +
+             files.files.length + '.';
+    }
+
+    var total = 0;
+    for (var i = 0; i < files.files.length; i++) total += files.files[i].size;
+
+    if (total > MAX_TOTAL) {
+      return 'Those files come to ' + (total / 1048576).toFixed(1) +
+             'MB and the limit is 10MB in total. Remove the largest, or call ' +
+             '832-470-3852 and we will arrange another way to receive them.';
+    }
+
+    return null;
+  }
+
+  function showProblem(text) {
+    if (!hint) return;
+    hint.textContent = text || DEFAULT_HINT;
+    hint.classList.toggle('is-error', Boolean(text));
+  }
+
+  if (files) {
+    files.addEventListener('change', function () {
+      showProblem(attachmentProblem());
+    });
+  }
+
+  form.addEventListener('submit', function (event) {
+    var problem = attachmentProblem();
+    if (problem) {
+      event.preventDefault();
+      showProblem(problem);
+      if (files) files.focus();
+      return;
+    }
+
     var button = form.querySelector('button[type="submit"]');
     if (!button) return;
-    // Let the submission start before disabling, or the button's value is dropped.
+
+    // Uploads take a moment; say so rather than appearing to hang.
     window.setTimeout(function () {
       button.disabled = true;
       button.style.opacity = '.6';
+      button.textContent = files && files.files && files.files.length
+        ? 'Sending documents…'
+        : 'Sending…';
     }, 0);
   });
 })();
