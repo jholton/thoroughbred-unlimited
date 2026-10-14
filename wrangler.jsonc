@@ -27,7 +27,15 @@
     // Serve 404.html with a real 404. Without this, unmatched paths fall back
     // to index.html with a 200, so typos would render the homepage and look
     // like genuine pages to crawlers.
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+
+    // Run the Worker before asset routing for the form endpoint.
+    //
+    // The asset router intercepts navigation requests (Sec-Fetch-Mode:
+    // navigate) to serve HTML, and answers anything that is not GET/HEAD with
+    // a bare 405 — so a real browser submitting the form never reached the
+    // Worker, while curl, which omits that header, sailed through.
+    "run_worker_first": ["/send"]
   },
 
   "observability": {
