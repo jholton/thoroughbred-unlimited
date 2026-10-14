@@ -4,6 +4,18 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-06-01",
 
+  // Plaintext variables live here, because `wrangler deploy` overwrites the
+  // Worker's vars with whatever this file declares — anything set only in the
+  // dashboard is wiped on the next deploy.
+  //
+  // RESEND_API_KEY and TO_EMAIL are deliberately absent: they are Secrets, set
+  // in the dashboard. Secrets are stored separately and survive deploys, and
+  // this repository is public, so neither the API key nor the destination
+  // inbox belongs in it.
+  "vars": {
+    "FROM_EMAIL": "noreply@thoroughbredunlimited.com"
+  },
+
   "assets": {
     // The whole brochure site. Files here are served directly by the asset
     // server and never invoke the Worker.
