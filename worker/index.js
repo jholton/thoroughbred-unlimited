@@ -33,8 +33,17 @@ export default {
       return redirect('/contact.html');
     }
 
-    // Anything else that got this far matched no asset. Let the asset binding
-    // answer so not_found_handling returns 404.html with a 404 status.
+    // Anything else that got this far matched no asset. Hand it to the asset
+    // binding so not_found_handling returns 404.html with a 404 status.
+    //
+    // The asset server only speaks GET/HEAD and answers anything else with a
+    // bare 405, which the browser renders as its own error page instead of
+    // ours. A stale cached form posting to a retired URL is the likely cause,
+    // so re-issue as a GET and let the visitor land somewhere recognisable.
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return env.ASSETS.fetch(new Request(url, { method: 'GET' }));
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
