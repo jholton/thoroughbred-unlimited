@@ -74,7 +74,7 @@ export default {
     // The asset server only speaks GET/HEAD and answers anything else with a
     // bare 405, which the browser renders as its own error page instead of
     // ours. A stale cached form posting to a retired URL is the likely cause,
-    // so re-issue as a GET and let the visitor land somewhere recognisable.
+    // so re-issue as a GET and let the visitor land somewhere recognizable.
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return env.ASSETS.fetch(new Request(url, { method: 'GET' }));
     }
@@ -141,7 +141,7 @@ async function handleSend(request, env) {
   }
 
   const text =
-    'New assignment enquiry from the Thoroughbred Unlimited website.\n\n' +
+    'New assignment inquiry from the Thoroughbred Unlimited website.\n\n' +
     `Name:             ${name}\n` +
     `Company:          ${company}\n` +
     `Email:            ${email}\n` +
@@ -230,7 +230,7 @@ function buildHtml(data) {
 <html><body style="margin:0;padding:24px;background:#F7F5F1;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
 <div style="max-width:640px;margin:0 auto;background:#FFFFFF;border:1px solid #E3DED4;border-radius:3px;overflow:hidden">
   <div style="background:#0B0B0D;padding:18px 24px">
-    <div style="color:#E7C86B;font-size:11px;letter-spacing:2px;text-transform:uppercase">New assignment enquiry</div>
+    <div style="color:#E7C86B;font-size:11px;letter-spacing:2px;text-transform:uppercase">New assignment inquiry</div>
     <div style="color:#FFFFFF;font-size:17px;margin-top:4px">Thoroughbred Unlimited website</div>
   </div>
 

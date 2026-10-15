@@ -1,4 +1,4 @@
-/* Thoroughbred Unlimited — site behaviour */
+/* Thoroughbred Unlimited — site behavior */
 (function () {
   'use strict';
 
