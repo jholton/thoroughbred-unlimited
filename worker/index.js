@@ -238,7 +238,7 @@ function buildHtml(data) {
     <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:24px">
       ${row('Name', data.name)}
       ${row('Company', data.company)}
-      ${row('Email', data.email, `mailto:${data.email}`)}
+      ${row('Email', data.email)}
       ${row('Phone', data.phone, `tel:${String(data.phone).replace(/[^\d+]/g, '')}`)}
       ${row('Assignment', data.type)}
       ${row('Location', data.location)}
