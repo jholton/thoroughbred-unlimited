@@ -43,6 +43,14 @@
     "run_worker_first": ["/send"]
   },
 
+  // Serve the site on the real domain. custom_domain makes Cloudflare create
+  // the DNS records and issue the certificates itself, so neither hostname
+  // may already have a record of its own when this deploys.
+  "routes": [
+    { "pattern": "thoroughbredunlimited.com", "custom_domain": true },
+    { "pattern": "www.thoroughbredunlimited.com", "custom_domain": true }
+  ],
+
   "observability": {
     "enabled": true
   }
