@@ -18,7 +18,7 @@
   // this repository is public, so neither the API key nor the destination
   // inbox belongs in it.
   "vars": {
-    "FROM_EMAIL": "noreply@thoroughbredunlimited.com"
+    "FROM_EMAIL": "website@thoroughbredunlimited.com"
   },
 
   "assets": {
